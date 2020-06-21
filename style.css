@@ -4,3 +4,7 @@
     /* background: linear-gradient(#25364f, #4d71a5, #9bc4ff); */
     background-image: radial-gradient(rgba(0, 0, 0, 0.562), black);
 }
+
+div.nav {
+    background-color: black;
+}
