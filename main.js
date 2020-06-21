@@ -1,9 +1,15 @@
 const btnBubble = document.getElementById("bubble");
 const btnReset = document.getElementById("reset");
+const btnQuick = document.getElementById("quick");
+
+const SORTED = 'purple';
+const COMP = 'green';
+const SWAP = 'red';
+const UNSORTED = 'grey';
 
 btnBubble.addEventListener('click', function(){
     ab.animationSeq = bubbleSort(ab.toArray());
-    ab.playAnimation();
+    ab.playAnimation(10);
 })
 
 btnReset.addEventListener('click', function(){
@@ -11,6 +17,11 @@ btnReset.addEventListener('click', function(){
     ab.initRandomArray();
     ab.draw(ctx);
     ab.animationSeq = [];
+})
+
+btnQuick.addEventListener('click', function(){
+    ab.animationSeq = quickSort(ab.toArray());
+    ab.playAnimation(10);
 })
 
 const canvas = document.getElementById("cv");
@@ -70,7 +81,7 @@ ArrayBar.prototype.initRandomArray = function(){
          let height = Math.floor(Math.random() * this.range);
          let x = startx + i * (this.width + this.gap);
          let y = 0;
-         let bar = new Bar(x, y, this.width, height, 'grey');
+         let bar = new Bar(x, y, this.width, height, UNSORTED);
          this.bars.push(bar);
     }
 }
@@ -92,7 +103,7 @@ ArrayBar.prototype.clear = function (ctx){
     }
 }
 
-ArrayBar.prototype.playAnimation = function(){
+ArrayBar.prototype.playAnimation = function(time){
     function update(){
         console.log(this.animationSeq.length);
         if (this.animationSeq.length > 0){
@@ -112,7 +123,7 @@ ArrayBar.prototype.playAnimation = function(){
         }
     }
     const boundUpdate = update.bind(this);
-    var animationId = setInterval(boundUpdate, 100);
+    var animationId = setInterval(boundUpdate, time);
 }
 
 ArrayBar.prototype.toArray = function(){
@@ -130,8 +141,8 @@ function bubbleSort(array){
         while (j >= i){
 
             let compare_color = {
-                [j]: new BarProperties(array[j], 'green'), 
-                [j+1]: new BarProperties(array[j + 1], 'green')
+                [j]: new BarProperties(array[j], COMP), 
+                [j+1]: new BarProperties(array[j + 1], COMP)
             };
             animationSeq.push(compare_color);
 
@@ -143,8 +154,8 @@ function bubbleSort(array){
                 
                 
                 let swap_color = {
-                    [j]: new BarProperties(array[j], 'red'), 
-                    [j+1]: new BarProperties(array[j+1], 'red')
+                    [j]: new BarProperties(array[j], SWAP), 
+                    [j+1]: new BarProperties(array[j+1], SWAP)
                 }
 
 
@@ -153,47 +164,88 @@ function bubbleSort(array){
             }
 
             let compare_uncolor = {
-                [j]: new BarProperties(array[j], 'grey'), 
-                [j+1]: new BarProperties(array[j + 1], 'grey')
+                [j]: new BarProperties(array[j], UNSORTED), 
+                [j+1]: new BarProperties(array[j + 1], UNSORTED)
             };
             animationSeq.push(compare_uncolor);
             j--;
         }
 
         let color_sorted = {
-            [i]: new BarProperties(array[j + 1], 'brown')
+            [i]: new BarProperties(array[j + 1], SORTED)
         };
         animationSeq.push(color_sorted);
     }
 
     let last_sorted = {
-        [array.length - 1]: new BarProperties(array[array.length - 1], 'brown')
+        [array.length - 1]: new BarProperties(array[array.length - 1], SORTED)
     };
     animationSeq.push(last_sorted);
 
     return animationSeq;
 }
 
+function quickSort(array){
+    animationSeq = [];
+    quickSortHelper(array, 0, array.length, animationSeq);
+    return animationSeq;
+}
 
-function quickSort(array, l, r){
-    if ( !(r - l < 2)){
+function quickSortHelper(array, l, r, animationSeq){
+    if (r - l === 1){
+        let color_sorted = {
+            [l]: new BarProperties(array[l], SORTED)
+        };
+        animationSeq.push(color_sorted);
+    }else if ( !(r - l < 2)){
         var pivot = array[r - 1];
         var i = l;
         
         for (let j = l; j < r - 1; j ++){
+            let compare_color = {
+                [r-1]: new BarProperties(array[r-1], COMP), 
+                [j]: new BarProperties(array[j], COMP)
+            };
+            
+            let compare_uncolor = {
+                [r-1]: new BarProperties(array[r-1], UNSORTED), 
+                [j]: new BarProperties(array[j], UNSORTED)
+            };
+            animationSeq.push(compare_color);
+            animationSeq.push(compare_uncolor)
+
             if (array[j] <= pivot){
+                
                 let tmp = array[i];
                 array[i] = array[j]
                 array[j] = tmp;
+                
+                let swap_color = {
+                    [i]: new BarProperties(array[i], SWAP), 
+                    [j]: new BarProperties(array[j], SWAP)
+                };
+                let swap_uncolor = {
+                    [i]: new BarProperties(array[i], UNSORTED), 
+                    [j]: new BarProperties(array[j], UNSORTED)
+                };
+                animationSeq.push(swap_color);
+                animationSeq.push(swap_uncolor);
+                
                 i ++;
             }
+
         }
         let tmp = array[i];
         array[i] = pivot;
         array[r - 1] = tmp
+
+        let color_sorted = {
+            [i]: new BarProperties(array[i], SORTED)
+        };
+        animationSeq.push(color_sorted);
         
-        quickSort(array, l, i);
-        quickSort(array, i + 1, r);
+        quickSortHelper(array, l, i, animationSeq);
+        quickSortHelper(array, i + 1, r, animationSeq);
     }
 }
 
@@ -214,10 +266,3 @@ function testSorting(){
     console.log(JSON.stringify(test1) === JSON.stringify(test2));
 }
 
-// ab.animationSeq = bubbleSort(ab.toArray());
-
-// ab.playAnimation();
-
-a = [5, 6,2, 8, 1, 2, 6]
-a = [2, 1,2, 5, 6, 6, 8]
-quickSort(a, 0, 7);
