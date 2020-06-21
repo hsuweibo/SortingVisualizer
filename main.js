@@ -175,12 +175,49 @@ function bubbleSort(array){
 }
 
 
-const ab = new ArrayBar(50, 800, 5, 2);
+function quickSort(array, l, r){
+    if ( !(r - l < 2)){
+        var pivot = array[r - 1];
+        var i = l;
+        
+        for (let j = l; j < r - 1; j ++){
+            if (array[j] <= pivot){
+                let tmp = array[i];
+                array[i] = array[j]
+                array[j] = tmp;
+                i ++;
+            }
+        }
+        let tmp = array[i];
+        array[i] = pivot;
+        array[r - 1] = tmp
+        
+        quickSort(array, l, i);
+        quickSort(array, i + 1, r);
+    }
+}
+
+
+const ab = new ArrayBar(50, 800, 10, 2);
 ab.draw(ctx);
 
-
+function testSorting(){
+    const test1 = []
+    for (var i = 0; i < 100; i ++){
+        test1.push(Math.floor(Math.random()*100));
+    }
+    const test2 = test1.slice();
+    quickSort(test2, 0, test2.length);
+    test1.sort(function(a,b){return a - b});
+    console.log(test1)
+    console.log(test2)
+    console.log(JSON.stringify(test1) === JSON.stringify(test2));
+}
 
 // ab.animationSeq = bubbleSort(ab.toArray());
 
 // ab.playAnimation();
 
+a = [5, 6,2, 8, 1, 2, 6]
+a = [2, 1,2, 5, 6, 6, 8]
+quickSort(a, 0, 7);
