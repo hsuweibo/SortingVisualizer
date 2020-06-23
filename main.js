@@ -1,6 +1,9 @@
 const btnBubble = document.getElementById("bubble");
 const btnReset = document.getElementById("reset");
 const btnQuick = document.getElementById("quick");
+const btnPause = document.getElementById("pause");
+const btnPlay = document.getElementById("play");
+const btnStop = document.getElementById("stop");
 
 const SORTED = 'purple';
 const COMP = 'green';
@@ -9,20 +12,40 @@ const UNSORTED = 'grey';
 
 btnBubble.addEventListener('click', function(){
     ab.animationSeq = bubbleSort(ab.toArray());
-    ab.playAnimation(10);
-})
+});
 
 btnReset.addEventListener('click', function(){
     ab.clear(ctx);
     ab.initRandomArray();
     ab.draw(ctx);
     ab.animationSeq = [];
-})
+    ab.animationId = null;
+});
+
+btnStop.addEventListener('click', function(){
+    ab.animationSeq = [];
+    clearInterval(ab.animationId);
+    ab.animationId = null;
+    ab.draw(ctx);
+    btnReset.removeAttribute('disabled');
+    btnBubble.removeAttribute('disabled');
+    btnQuick.removeAttribute('disabled');
+});
 
 btnQuick.addEventListener('click', function(){
     ab.animationSeq = quickSort(ab.toArray());
+});
+
+btnPause.addEventListener('click', function(){
+    clearInterval(ab.animationId);
+});
+
+btnPlay.addEventListener('click', function(){
+    btnReset.setAttribute('disabled', '');
+    btnBubble.setAttribute('disabled', '');
+    btnQuick.setAttribute('disabled', '');
     ab.playAnimation(10);
-})
+});
 
 const canvas = document.getElementById("cv");
 canvas.width = window.innerWidth;
@@ -71,6 +94,7 @@ function ArrayBar(size, range, width, gap){
     this.bars = [];
     this.initRandomArray();
     this.animationSeq = [];
+    this.animationId = null;
 }
 
 
@@ -117,13 +141,15 @@ ArrayBar.prototype.playAnimation = function(time){
                     bar.draw(ctx);
                 }
             }
-            // setTimeout(boundUpdate, 0.01);
         }else{
-            clearInterval(animationId);
+            clearInterval(this.animationId);
+            btnReset.removeAttribute('disabled');
+            btnBubble.removeAttribute('disabled');
+            btnQuick.removeAttribute('disabled');
         }
     }
     const boundUpdate = update.bind(this);
-    var animationId = setInterval(boundUpdate, time);
+    this.animationId = setInterval(boundUpdate, time);
 }
 
 ArrayBar.prototype.toArray = function(){
