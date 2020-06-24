@@ -5,46 +5,30 @@ const btnPause = document.getElementById("pause");
 const btnPlay = document.getElementById("play");
 const btnStop = document.getElementById("stop");
 
-const SORTED = 'purple';
-const COMP = 'green';
-const SWAP = 'red';
-const UNSORTED = 'grey';
 
 btnBubble.addEventListener('click', function(){
-    ab.animationSeq = bubbleSort(ab.toArray());
+    vis.deltas = bubbleSort(JSON.parse(JSON.stringify(vis.initArray)));
 });
 
 btnReset.addEventListener('click', function(){
-    ab.clear(ctx);
-    ab.initRandomArray();
-    ab.draw(ctx);
-    ab.animationSeq = [];
-    ab.animationId = null;
+    vis.setRandomArray(vis.length, vis.range);
 });
 
 btnStop.addEventListener('click', function(){
-    ab.animationSeq = [];
-    clearInterval(ab.animationId);
-    ab.animationId = null;
-    ab.draw(ctx);
-    btnReset.removeAttribute('disabled');
-    btnBubble.removeAttribute('disabled');
-    btnQuick.removeAttribute('disabled');
+    vis.stopAnimation();
 });
 
 btnQuick.addEventListener('click', function(){
-    ab.animationSeq = quickSort(ab.toArray());
+    vis.deltas = quickSort(JSON.parse(JSON.stringify(vis.initArray)));
+    vis.deltasIndex = 0;
 });
 
 btnPause.addEventListener('click', function(){
-    clearInterval(ab.animationId);
+    vis.pauseAnimation();
 });
 
 btnPlay.addEventListener('click', function(){
-    btnReset.setAttribute('disabled', '');
-    btnBubble.setAttribute('disabled', '');
-    btnQuick.setAttribute('disabled', '');
-    ab.playAnimation(10);
+    vis.playAnimation(10);
 });
 
 const canvas = document.getElementById("cv");
@@ -54,93 +38,35 @@ canvas.height = window.innerHeight;
 /** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext('2d');
 
-function Bar(x, y, width, height, color){
-    this.color = color;
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-}
-
-Bar.prototype.draw = function(ctx){
-    ctx.save();
-    ctx.fillStyle = this.color;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
-    ctx.restore();
-}
-
-Bar.prototype.clear = function (ctx){
-    ctx.save();
-    ctx.clearRect(this.x, this.y, this.width, this.height);
-    ctx.restore();
-}
-
-Bar.prototype.setProperties = function(bp){
-    this.color = bp.color;
-    this.height = bp.height;
-}
-
-function BarProperties(height, color){
-    this.height = height;
-    this.color = color;
-}
 
 
-function ArrayBar(size, range, width, gap){
+
+// Refactoring//
+const COLOR = {SWAP: 'red', COMPARE: 'green', UNSORTED: 'grey', SORTED: 'purple'};
+
+function Visualizer(length, range, view){
+    this.animationId = undefined;
+    this.initArray = undefined;
+    this.arrayView = view;
+    this.deltas = undefined;
+    this.deltasIndex = undefined;
+    this.length = length;
     this.range = range;
-    this.size = size;
-    this.width = width;
-    this.gap = gap;
-    this.bars = [];
-    this.initRandomArray();
-    this.animationSeq = [];
-    this.animationId = null;
+
+    this.setRandomArray(length, range);
 }
 
+Visualizer.prototype.playAnimation = function(time){
+    btnReset.setAttribute('disabled', '');
+    btnBubble.setAttribute('disabled', '');
+    btnQuick.setAttribute('disabled', '');
 
-ArrayBar.prototype.initRandomArray = function(){
-    const startx = Math.floor((canvas.width - (this.width + this.gap) * this.size) / 2);
-    this.bars = [];
-    for (let i = 0; i < this.size; i++) {
-         let height = Math.floor(Math.random() * this.range);
-         let x = startx + i * (this.width + this.gap);
-         let y = 0;
-         let bar = new Bar(x, y, this.width, height, UNSORTED);
-         this.bars.push(bar);
-    }
-}
-
-
-ArrayBar.prototype.addAnimationSeq = function (changes){
-    this.animationSeq.push(changes);
-}
-
-ArrayBar.prototype.draw = function (ctx){
-    for (const bar of this.bars) {
-        bar.draw(ctx);
-    }
-}
-
-ArrayBar.prototype.clear = function (ctx){
-    for (const bar of this.bars) {
-        bar.clear(ctx);
-    }
-}
-
-ArrayBar.prototype.playAnimation = function(time){
     function update(){
-        console.log(this.animationSeq.length);
-        if (this.animationSeq.length > 0){
-            let changes = this.animationSeq.shift();
-            for (const prop in changes){
-                if (changes.hasOwnProperty(prop)){
-                    let index = prop.toString();
-                    let bar = this.bars[index];
-                    bar.clear(ctx);
-                    bar.setProperties(changes[index]);
-                    bar.draw(ctx);
-                }
-            }
+        console.log(this.deltas.length - 1 - this.deltasIndex);
+        if (this.deltasIndex < this.deltas.length){
+            let delta = this.deltas[this.deltasIndex];
+            this.arrayView.pushDelta(delta);
+            this.deltasIndex++;
         }else{
             clearInterval(this.animationId);
             btnReset.removeAttribute('disabled');
@@ -152,132 +78,192 @@ ArrayBar.prototype.playAnimation = function(time){
     this.animationId = setInterval(boundUpdate, time);
 }
 
-ArrayBar.prototype.toArray = function(){
-    const array = [];
-    for (let i = 0; i < this.bars.length; i++){
-        array.push(this.bars[i].height);
+Visualizer.prototype.setRandomArray = function(length, range){
+    this.initArray = [];
+    for (let i = 0; i < length; i ++){
+        let val = Math.floor(Math.random() * range) + 1;
+        let element = {value: val, color: COLOR.UNSORTED};
+        this.initArray.push(element);
     }
-    return array;
+
+    this.arrayView.setArray(JSON.parse(JSON.stringify(this.initArray)));
+    this.deltas = [];
+    this.deltasIndex = 0;
+
+    btnBubble.removeAttribute('disabled');
+    btnQuick.removeAttribute('disabled');
 }
 
+Visualizer.prototype.stopAnimation = function(){
+    clearInterval(this.animationId);
+    this.deltasIndex = 0;
+    this.arrayView.setArray(JSON.parse(JSON.stringify(this.initArray)));
+
+    btnReset.removeAttribute('disabled');
+    btnBubble.removeAttribute('disabled');
+    btnQuick.removeAttribute('disabled');
+}
+
+Visualizer.prototype.pauseAnimation = function(){
+    clearInterval(this.animationId);
+
+    btnReset.removeAttribute('disabled');
+}
+
+Visualizer.prototype.playNextFrame = function(){
+    if (this.deltasIndex < this.deltas.length){
+        let delta = this.deltas[this.deltasIndex];
+        this.arrayView.pushDelta(delta);
+        this.deltasIndex++;
+    }
+}
+
+Visualizer.prototype.playPreviousFrame = function(){
+    if (this.deltasIndex > 0){
+        this.deltasIndex--;
+        let delta = this.deltas[this.deltasIndex];
+        let newDelta = [];
+        for (const elementDelta of delta){
+            let newElementDelta = {index: elementDelta.index};
+            
+            if (("fromColor" in elementDelta) && ("toColor" in elementDelta)){
+                newElementDelta.toColor = elementDelta.fromColor;
+                newElementDelta.fromColor = elementDelta.toColor;
+            }
+
+            if (("fromValue" in elementDelta) && ("toValue" in elementDelta)){
+                newElementDelta.toValue = elementDelta.fromValue;
+                newElementDelta.fromValue = elementDelta.toValue;
+            }
+            newDelta.push(newElementDelta);
+        }
+        this.arrayView.pushDelta(newDelta);
+    }
+}
+
+
+
+
+
+
+function ArrayView(ctx, baselineY, width, gap){
+    this.baselineY = baselineY;
+    this.width = width;
+    this.gap = gap;
+    this.ctx = ctx;
+
+    this.array = undefined;
+    this.startX = undefined;
+}
+
+ArrayView.prototype.setArray = function(array){
+    // Clears the existing array on the canvas.
+    if (this.array && this.startX){
+        for (let i = 0; i < this.array.length; i ++){
+            this.ctx.clearRect(this.startX + (i * (this.width + this.gap)), this.baselineY, this.width, this.array[i].value);
+        }
+    }
+
+    // Dynamically computes starting position
+    this.array = array;
+    this.startX = Math.floor((this.ctx.canvas.width - (this.width + this.gap) * this.array.length  ) / 2);
+
+    // Draws the new array on the canvas
+    for (let i = 0; i < this.array.length; i ++){
+        this.ctx.save();
+        this.ctx.fillStyle = this.array[i].color;
+        this.ctx.fillRect(this.startX + (i * (this.width + this.gap)), this.baselineY, this.width, this.array[i].value);
+        this.ctx.restore();
+    }
+}
+
+ArrayView.prototype.pushDelta = function(delta){
+    for (let eDelta of delta){
+        let i = eDelta.index;
+        if (i < this.array.length){
+            // Clears the existing element on the canvas
+            this.ctx.clearRect(this.startX + (i * (this.width + this.gap)), this.baselineY, this.width, this.array[i].value);
+            
+            // Update the element
+            if ("toColor" in eDelta){
+                this.array[i].color = eDelta.toColor;
+            }
+            if ("toValue" in eDelta){
+                this.array[i].value = eDelta.toValue;
+            }
+
+            // Draws the new updated element on the canvas
+            this.ctx.save();
+            this.ctx.fillStyle = this.array[i].color;
+            this.ctx.fillRect(this.startX + (i * (this.width + this.gap)), this.baselineY, this.width, this.array[i].value);
+            this.ctx.restore();
+        }
+    }
+}
+
+var view = new ArrayView(ctx, 0, 10, 5);
+var vis = new Visualizer(80, 800, view);
+
+
+
 function bubbleSort(array){
-    const animationSeq = []
+    const deltas = [];
+    var d;
     for (let i = 0; i < array.length - 1; i ++){
         let j = array.length - 2; 
         while (j >= i){
+            d = [
+                {index: j, fromColor: array[j].color, toColor: COLOR.COMPARE}, 
+                {index: j+1, fromColor: array[j + 1].color, toColor: COLOR.COMPARE}
+            ];
+            deltas.push(d);
 
-            let compare_color = {
-                [j]: new BarProperties(array[j], COMP), 
-                [j+1]: new BarProperties(array[j + 1], COMP)
-            };
-            animationSeq.push(compare_color);
+            array[j].color = COLOR.COMPARE;
+            array[j + 1].color = COLOR.COMPARE;
 
-            if (array[j] > array[j + 1]){
-                let tmp = array[j];
-                array[j] = array[j + 1];
-                array[j + 1] = tmp;
-                
-                
-                
-                let swap_color = {
-                    [j]: new BarProperties(array[j], SWAP), 
-                    [j+1]: new BarProperties(array[j+1], SWAP)
-                }
+            if (array[j].value > array[j + 1].value){
+                let d = [
+                    {index: j, fromColor: array[j].color, toColor: COLOR.SWAP, fromValue: array[j].value, toValue: array[j + 1].value}, 
+                    {index: j+1, fromColor: array[j + 1].color, toColor: COLOR.SWAP, fromValue: array[j+1].value, toValue: array[j].value}
+                ];
+                deltas.push(d);
 
+                let tmp = array[j].value;
+                array[j].value = array[j + 1].value;
+                array[j + 1].value = tmp;
 
-
-                animationSeq.push(swap_color);
+                array[j].color = COLOR.SWAP;
+                array[j + 1].color = COLOR.SWAP;
             }
 
-            let compare_uncolor = {
-                [j]: new BarProperties(array[j], UNSORTED), 
-                [j+1]: new BarProperties(array[j + 1], UNSORTED)
-            };
-            animationSeq.push(compare_uncolor);
+            d = [
+                {index: j, fromColor: array[j].color, toColor: COLOR.UNSORTED}, 
+                {index: j+1, fromColor: array[j+1].color, toColor: COLOR.UNSORTED}
+            ];
+            deltas.push(d);
+
+            array[j].color = COLOR.UNSORTED;
+            array[j+1].color = COLOR.UNSORTED;
+
             j--;
         }
 
-        let color_sorted = {
-            [i]: new BarProperties(array[j + 1], SORTED)
-        };
-        animationSeq.push(color_sorted);
+        d = [
+            {index: i, fromColor: array[i].color, toColor: COLOR.SORTED}
+        ];
+        deltas.push(d);
+
+        array[i].color = COLOR.SORTED;
     }
 
-    let last_sorted = {
-        [array.length - 1]: new BarProperties(array[array.length - 1], SORTED)
-    };
-    animationSeq.push(last_sorted);
+    d = [
+        {index: array.length - 1, fromColor: array[array.length - 1].color, toColor: COLOR.SORTED}
+    ];
+    deltas.push(d);
+    array[array.length - 1].color = COLOR.SORTED;
 
-    return animationSeq;
+    return deltas;
 }
-
-function quickSort(array){
-    animationSeq = [];
-    quickSortHelper(array, 0, array.length, animationSeq);
-    return animationSeq;
-}
-
-function quickSortHelper(array, l, r, animationSeq){
-    if (r - l === 1){
-        let color_sorted = {
-            [l]: new BarProperties(array[l], SORTED)
-        };
-        animationSeq.push(color_sorted);
-    }else if ( !(r - l < 2)){
-        var pivot = array[r - 1];
-        var i = l;
-        
-        for (let j = l; j < r - 1; j ++){
-            let compare_color = {
-                [r-1]: new BarProperties(array[r-1], COMP), 
-                [j]: new BarProperties(array[j], COMP)
-            };
-            
-            let compare_uncolor = {
-                [r-1]: new BarProperties(array[r-1], UNSORTED), 
-                [j]: new BarProperties(array[j], UNSORTED)
-            };
-            animationSeq.push(compare_color);
-            animationSeq.push(compare_uncolor)
-
-            if (array[j] <= pivot){
-                
-                let tmp = array[i];
-                array[i] = array[j]
-                array[j] = tmp;
-                
-                let swap_color = {
-                    [i]: new BarProperties(array[i], SWAP), 
-                    [j]: new BarProperties(array[j], SWAP)
-                };
-                let swap_uncolor = {
-                    [i]: new BarProperties(array[i], UNSORTED), 
-                    [j]: new BarProperties(array[j], UNSORTED)
-                };
-                animationSeq.push(swap_color);
-                animationSeq.push(swap_uncolor);
-                
-                i ++;
-            }
-
-        }
-        let tmp = array[i];
-        array[i] = pivot;
-        array[r - 1] = tmp
-
-        let color_sorted = {
-            [i]: new BarProperties(array[i], SORTED)
-        };
-        animationSeq.push(color_sorted);
-        
-        quickSortHelper(array, l, i, animationSeq);
-        quickSortHelper(array, i + 1, r, animationSeq);
-    }
-}
-
-
-const ab = new ArrayBar(50, 800, 10, 2);
-ab.draw(ctx);
 
 function testSorting(){
     const test1 = []
@@ -292,3 +278,81 @@ function testSorting(){
     console.log(JSON.stringify(test1) === JSON.stringify(test2));
 }
 
+
+function quickSort(array){
+    deltas = [];
+    quickSortHelper(array, 0, array.length, deltas);
+    return deltas;
+}
+
+function quickSortHelper(array, l, r, deltas){
+    var d;
+    if (r - l === 1){
+        d = [
+            {index: l, fromColor: array[l].color, toColor: COLOR.SORTED}
+        ];
+        deltas.push(d);
+        
+    }else if ( !(r - l < 2)){
+        var pivot = array[r - 1].value;
+        var i = l;
+        
+        for (let j = l; j < r - 1; j ++){
+            d = [
+                {index: r-1, fromColor: array[r-1].color, toColor: COLOR.COMPARE}, 
+                {index: j, fromColor: array[j].color, toColor: COLOR.COMPARE}
+            ];
+            deltas.push(d);
+
+            let dUncolor = [];
+
+            if (array[j].value <= pivot){
+                d = [
+                    {index: i, fromValue: array[i].value, toValue: array[j].value, fromColor: array[i].color, toColor: COLOR.SWAP}, 
+                    {index: j, fromValue: array[j].value, toValue: array[i].value, fromColor: array[j].color, toColor: COLOR.SWAP}
+                ];
+                deltas.push(d);
+
+                let tmp = array[i].value;
+                array[i].value = array[j].value
+                array[j].value = tmp;
+
+                dUncolor.push({index: i, fromColor: array[i].color, toColor: COLOR.UNSORTED})
+                // dUncolor.push({index: j, fromColor: array[j].color, toColor: COLOR.UNSORTED});
+                
+                i ++;
+            }
+
+            dUncolor.push({index: r-1, fromColor: array[r-1].color, toColor: COLOR.UNSORTED});
+            dUncolor.push({index: j, fromColor: array[j].color, toColor: COLOR.UNSORTED});
+            deltas.push(dUncolor);
+
+        }
+        d = [
+            {index: i, fromValue:array[i].value, toValue: array[r-1].value, fromColor: array[i].color, toColor: COLOR.SWAP},
+            {index: r-1, fromValue: array[r-1].value, toValue:array[i].value, fromColor: array[r-1].color, toColor: COLOR.SWAP}
+        ];
+        deltas.push(d);
+
+        
+        let tmp = array[i].value;
+        array[i].value = pivot;
+        array[r - 1].value = tmp
+        
+        array[i].value = COLOR.SORTED;
+        
+        d = [
+            {index: i, fromColor: array[i].color, toColor: COLOR.UNSORTED},
+            {index: r-1, fromColor: array[r-1].color, toColor: COLOR.UNSORTED},
+        ];
+        deltas.push(d);
+
+        d = [
+            {index: i, fromColor: array[i].color, toColor: COLOR.SORTED},
+        ];
+        deltas.push(d);
+
+        quickSortHelper(array, l, i, deltas);
+        quickSortHelper(array, i + 1, r, deltas);
+    }
+}
