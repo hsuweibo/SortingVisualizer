@@ -1,14 +1,10 @@
-const btnBubble = document.getElementById("bubble");
+const algSelect = document.getElementById("algSelect");
 const btnReset = document.getElementById("reset");
-const btnQuick = document.getElementById("quick");
-const btnPause = document.getElementById("pause");
+
 const btnPlay = document.getElementById("play");
 const btnStop = document.getElementById("stop");
 
 
-btnBubble.addEventListener('click', function(){
-    vis.deltas = bubbleSort(JSON.parse(JSON.stringify(vis.initArray)));
-});
 
 btnReset.addEventListener('click', function(){
     vis.setRandomArray(vis.length, vis.range);
@@ -16,20 +12,35 @@ btnReset.addEventListener('click', function(){
 
 btnStop.addEventListener('click', function(){
     vis.stopAnimation();
+    btnPlay.textContent = "Play";
 });
 
-btnQuick.addEventListener('click', function(){
-    vis.deltas = quickSort(JSON.parse(JSON.stringify(vis.initArray)));
-    vis.deltasIndex = 0;
-});
-
-btnPause.addEventListener('click', function(){
-    vis.pauseAnimation();
-});
 
 btnPlay.addEventListener('click', function(){
-    vis.playAnimation(10);
+    if (vis.paused){
+        vis.playAnimation(10);
+        btnPlay.textContent = "Pause";
+    }else{
+        vis.pauseAnimation();
+        btnPlay.textContent = "Play";
+    }
 });
+
+
+algSelect.addEventListener('change', function(){
+    let alg = algSelect.value;
+    let copied = JSON.parse(JSON.stringify(vis.initArray));
+    if (alg === 'bubble'){
+        vis.deltas = bubbleSort(copied);
+    }else if (alg === 'quick'){
+        vis.deltas = quickSort(copied);
+    }else if (alg === 'merge'){
+        vis.deltas = mergeSort(copied);
+    }else if (alg === 'insertion'){
+        vis.deltas = insertionSort(copied);
+    }
+    vis.deltasIndex = 0;
+})
 
 const canvas = document.getElementById("cv");
 canvas.width = window.innerWidth;
@@ -42,10 +53,12 @@ const ctx = canvas.getContext('2d');
 
 
 // Refactoring//
-const COLOR = {SWAP: 'red', COMPARE: 'green', UNSORTED: 'grey', SORTED: 'purple'};
+const COLOR = {SWAP: 'red', COMPARE: 'green', UNSORTED: 'grey', SORTED: 'DarkSeaGreen', HIGHLIGHT: 'orange', PARTIALLY_SORTED: 'CadetBlue'};
 
-function Visualizer(length, range, view){
+function Visualizer(length, range, view, alg){
+    this.sortingAlg = alg;
     this.animationId = undefined;
+    this.paused = true;
     this.initArray = undefined;
     this.arrayView = view;
     this.deltas = undefined;
@@ -56,27 +69,14 @@ function Visualizer(length, range, view){
     this.setRandomArray(length, range);
 }
 
-Visualizer.prototype.playAnimation = function(time){
-    btnReset.setAttribute('disabled', '');
-    btnBubble.setAttribute('disabled', '');
-    btnQuick.setAttribute('disabled', '');
-
-    function update(){
-        console.log(this.deltas.length - 1 - this.deltasIndex);
-        if (this.deltasIndex < this.deltas.length){
-            let delta = this.deltas[this.deltasIndex];
-            this.arrayView.pushDelta(delta);
-            this.deltasIndex++;
-        }else{
-            clearInterval(this.animationId);
-            btnReset.removeAttribute('disabled');
-            btnBubble.removeAttribute('disabled');
-            btnQuick.removeAttribute('disabled');
-        }
+Visualizer.prototype.changeAlgorithm = function(alg){
+    if (alg !== this.sortingAlg){
+        this.sortingAlg = alg;
+        this.deltas = this.sortingAlg(JSON.parse(JSON.stringify(this.initArray)));
+        this.deltasIndex = 0;
     }
-    const boundUpdate = update.bind(this);
-    this.animationId = setInterval(boundUpdate, time);
 }
+
 
 Visualizer.prototype.setRandomArray = function(length, range){
     this.initArray = [];
@@ -87,25 +87,58 @@ Visualizer.prototype.setRandomArray = function(length, range){
     }
 
     this.arrayView.setArray(JSON.parse(JSON.stringify(this.initArray)));
-    this.deltas = [];
+    this.deltas = this.sortingAlg(JSON.parse(JSON.stringify(this.initArray)));
     this.deltasIndex = 0;
 
-    btnBubble.removeAttribute('disabled');
-    btnQuick.removeAttribute('disabled');
+    algSelect.removeAttribute('disabled');
+
 }
+
+Visualizer.prototype.playAnimation = function(time){
+    btnReset.setAttribute('disabled', '');
+    algSelect.setAttribute('disabled', '');
+    // btnPause.removeAttribute('disabled');
+
+    btnStop.removeAttribute('disabled');
+
+    this.paused = false;
+
+    function update(){
+        console.log(this.deltas.length - 1 - this.deltasIndex);
+        if (this.deltasIndex < this.deltas.length){
+            let delta = this.deltas[this.deltasIndex];
+            this.arrayView.pushDelta(delta);
+            this.deltasIndex++;
+        }else{
+            clearInterval(this.animationId);
+            this.paused = true;
+
+            this.deltasIndex = 0;
+            
+            btnReset.removeAttribute('disabled');
+            algSelect.removeAttribute('disabled');
+            btnPlay.textContent = 'Play';
+        }
+    }
+    const boundUpdate = update.bind(this);
+    this.animationId = setInterval(boundUpdate, time);
+}
+
 
 Visualizer.prototype.stopAnimation = function(){
     clearInterval(this.animationId);
+    this.paused = true;
+
     this.deltasIndex = 0;
     this.arrayView.setArray(JSON.parse(JSON.stringify(this.initArray)));
 
     btnReset.removeAttribute('disabled');
-    btnBubble.removeAttribute('disabled');
-    btnQuick.removeAttribute('disabled');
+    algSelect.removeAttribute('disabled');
 }
 
 Visualizer.prototype.pauseAnimation = function(){
     clearInterval(this.animationId);
+    this.paused = true;
 
     btnReset.removeAttribute('disabled');
 }
@@ -201,8 +234,7 @@ ArrayView.prototype.pushDelta = function(delta){
     }
 }
 
-var view = new ArrayView(ctx, 0, 10, 5);
-var vis = new Visualizer(80, 800, view);
+
 
 
 
@@ -265,14 +297,14 @@ function bubbleSort(array){
     return deltas;
 }
 
-function testSorting(){
+function testSorting(sort){
     const test1 = []
     for (var i = 0; i < 100; i ++){
         test1.push(Math.floor(Math.random()*100));
     }
     const test2 = test1.slice();
-    quickSort(test2, 0, test2.length);
-    test1.sort(function(a,b){return a - b});
+    sort(test2, 0, test2.length);
+    test1.sort(function(a, b){return a - b});
     console.log(test1)
     console.log(test2)
     console.log(JSON.stringify(test1) === JSON.stringify(test2));
@@ -356,3 +388,203 @@ function quickSortHelper(array, l, r, deltas){
         quickSortHelper(array, i + 1, r, deltas);
     }
 }
+
+
+function insertionSort(array){
+    var deltas = [];
+    for (let i = 0; i < array.length; i++){
+        let j = i;
+
+        while (j > 0 && array[j].value < array[j - 1].value){
+            let compare = [
+                {index: j, fromColor: array[j].color, toColor: COLOR.COMPARE},
+                {index: j-1, fromColor: array[j-1].color, toColor:COLOR.COMPARE}
+            ];
+            deltas.push(compare);
+
+            let swap = [
+                {index: j, fromColor: COLOR.COMPARE, toColor: COLOR.SWAP, fromValue: array[j].value, toValue: array[j - 1].value},
+                {index: j-1, fromColor: COLOR.COMPARE, toColor:COLOR.SWAP, fromValue: array[j-1].value, toValue: array[j].value}
+            ];
+            deltas.push(swap);
+            
+            let uncolor = [
+                {index: j, fromColor: COLOR.SWAP, toColor: COLOR.SORTED},
+                {index: j-1, fromColor: COLOR.SWAP, toColor: COLOR.UNSORTED}
+            ];
+            deltas.push(uncolor);
+
+
+            let tmp = array[j-1].value;
+            array[j-1].value = array[j].value;
+            array[j].value = tmp;
+            
+            j--;
+        }
+
+        let newly_sorted = [
+            {index: j, fromColor: COLOR.UNSORTED, toColor: COLOR.SORTED},
+        ];
+        deltas.push(newly_sorted);
+
+        array[j].color = COLOR.SORTED;
+
+    }
+    return deltas;
+}
+
+
+function mergeSort(array){
+    var deltas = [];
+    mergeSortHelper(array, 0, array.length, deltas);
+
+    for (let i = 0; i < array.length; i++){
+        let sorted = [{index: i, fromColor: array[i].color, toColor: COLOR.SORTED}];
+        deltas.push(sorted);
+    }
+    return deltas;
+}
+
+function mergeSortHelper(array, l, r, deltas){
+    if ((r - l) >= 2){
+        const mid = l + Math.floor((r-l) / 2);
+        mergeSortHelper(array, l, mid, deltas);
+        mergeSortHelper(array, mid, r, deltas);
+        merge(array, l, mid, r, deltas);
+    }
+}
+
+function merge(array, l, m, r, deltas){
+    let p = l;
+    let q = m;
+    let i = l;
+    let batch = [];
+    let new_array = [];
+    while (p < m && q < r){
+        if (array[p].value < array[q].value){
+            
+            let animation = [
+                {index: i, fromValue: array[i].value, toValue: array[p].value}
+            ];
+            batch.push(animation);
+
+            let hightlight = [
+                {index: p, fromColor: array[p].color, toColor: COLOR.HIGHLIGHT}
+            ];
+            deltas.push(hightlight);
+
+            let unhightlight = [
+                {index: p, fromColor: COLOR.HIGHLIGHT, toColor: COLOR.PARTIALLY_SORTED}
+            ];
+            deltas.push(unhightlight);
+
+            array[p].color = COLOR.PARTIALLY_SORTED;
+
+            new_array.push(array[p]);
+            p++;
+            i++;
+        }else{
+            let animation = [
+                {index: i, fromValue: array[i].value, toValue: array[q].value}
+            ];
+            batch.push(animation);
+
+            let hightlight = [
+                {index: q, fromColor: array[q].color, toColor: COLOR.HIGHLIGHT}
+            ];
+            deltas.push(hightlight);
+
+            let unhightlight = [
+                {index: q, fromColor: COLOR.HIGHLIGHT, toColor: COLOR.PARTIALLY_SORTED}
+            ];
+            deltas.push(unhightlight);
+
+            array[q].color = COLOR.PARTIALLY_SORTED;
+
+            new_array.push(array[q]);
+            q++;
+            i++;
+        }
+    }
+
+    if (p == m){
+        while (q < r){
+            let animation = [
+                {index: i, fromValue: array[i].value, toValue: array[q].value}
+            ];
+            batch.push(animation);
+            
+            let hightlight = [
+                {index: q, fromColor: array[q].color, toColor: COLOR.HIGHLIGHT}
+            ];
+            deltas.push(hightlight);
+
+            let unhightlight = [
+                {index: q, fromColor: COLOR.HIGHLIGHT, toColor: COLOR.PARTIALLY_SORTED}
+            ];
+            deltas.push(unhightlight);
+
+            array[q].color = COLOR.PARTIALLY_SORTED;
+
+            new_array.push(array[q]);
+            q++;
+            i++;
+        }
+    }else if (q == r){
+        while (p < m){
+            let animation = [
+                {index: i, fromValue: array[i].value, toValue: array[p].value}
+            ];
+            batch.push(animation);
+
+            let hightlight = [
+                {index: p, fromColor: array[p].color, toColor: COLOR.HIGHLIGHT}
+            ];
+            deltas.push(hightlight);
+
+            let unhightlight = [
+                {index: p, fromColor: COLOR.HIGHLIGHT, toColor: COLOR.PARTIALLY_SORTED}
+            ];
+            deltas.push(unhightlight);
+
+            array[p].color = COLOR.PARTIALLY_SORTED;
+
+            new_array.push(array[p]);
+            p++;
+            i++;
+        }
+    }
+
+    for (let j = 0; j < new_array.length; j++){
+        array[l+j] = new_array[j];
+    }
+
+    for (let j = 0; j < batch.length; j++){
+        deltas.push(batch[j]);
+    }
+
+}
+
+var view = new ArrayView(ctx, 0, 10, 5);
+var vis = new Visualizer(80, 800, view, bubbleSort);
+
+
+// vis.deltas = mergeSort(vis.initArray);
+// vis.playAnimation(10);
+// var array = [
+//     {value: 16, color: COLOR.UNSORTED},
+//     {value: 22, color: COLOR.UNSORTED},
+//     {value: 34, color: COLOR.UNSORTED},
+//     {value: 67, color: COLOR.UNSORTED},
+//     {value: 77, color: COLOR.UNSORTED},
+
+//     {value: 4, color: COLOR.UNSORTED},
+//     {value: 15, color: COLOR.UNSORTED},
+//     {value: 55, color: COLOR.UNSORTED},
+//     {value: 80, color: COLOR.UNSORTED},
+//     {value: 90, color: COLOR.UNSORTED}
+// ]
+
+// var deltas = []
+// merge(array, 0, 5, 10, deltas);
+

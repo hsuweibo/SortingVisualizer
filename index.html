@@ -7,14 +7,35 @@
     <link rel="stylesheet", href="style.css">
 </head>
 <body>
-    <div class='nav'>
-        <button id="reset">Generate New Array</button>
-        <button id="play">Animate!</button>
-        <button id="pause">Pause</button>
-        <button id="stop">Stop</button>
-        <button id="bubble">Bubble Sort</button>
+    <nav>
+        <ul>
+            <li>
+                <label>Select algorithm: </label>
+                <select id='algSelect'>
+                    <option value='bubble'>Bubble Sort</option>
+                    <option value='quick'>Quick Sort</option>
+                    <option value='insertion'>Insertion Sort</option>
+                    <option value='merge'>Merge Sort</option>
+                </select>
+            </li>
+            <li>
+                <button id="reset">Generate New Array</button>
+            </li>        
+            <li>
+                <button id="play">Play</button>
+            </li>
+            <!-- <li>
+                <button id="pause" disabled>Pause</button>
+            </li> -->
+            <li>
+                <button id="stop" disabled>Stop</button>
+            </li>
+        </ul>
+
+        <!-- <button id="bubble">Bubble Sort</button>
         <button id="quick">Quick Sort</button>
-    </div>
+        <button id="insertion">Insertion Sort</button> -->
+    </nav>
     <canvas id="cv"> abc</canvas>
     <script src=main.js></script>
 </body>
