@@ -1,14 +1,17 @@
-body {
+html, body {
     margin: 0;
     padding: 0;
+    height: 100vh;
     color: white;
 }
+
+
 #cv {
-    width: 100%;
-    height: 100%;
-    /* background: linear-gradient(#25364f, #4d71a5, #9bc4ff); */
     background-image: radial-gradient(rgba(0, 0, 0, 0.562), black);
+    display: block;
 }
+
+
 
 nav > ul {
     display: flex;
@@ -19,7 +22,7 @@ nav > ul {
 }
 
 
-ul > li > select{
+ul > li > select {
     background-color: rgb(147, 182, 147);
     color: white;
     border-radius: 10px;
