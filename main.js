@@ -158,7 +158,7 @@ Visualizer.prototype.setAlgorithm = function(alg){
 Visualizer.prototype.setRandomArray = function(){
     this.initArray = [];
     for (let i = 0; i < this.length; i ++){
-        let val = Math.floor(Math.random() * this.range) + 1;
+        let val = Math.floor(Math.random() * this.range) + 10;
         let element = {value: val, color: COLOR.UNSORTED};
         this.initArray.push(element);
     }
