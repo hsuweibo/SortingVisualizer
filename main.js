@@ -21,8 +21,8 @@ const btnStop = document.getElementById("stop");
 const canvas = document.getElementById("cv");
 
 // Adjust the height of the canvas dynamically, so that it fills the entire viewport.
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight - document.querySelector('nav').offsetHeight;
+canvas.width = document.querySelector('html').clientWidth;
+canvas.height = document.querySelector('html').clientHeight - document.querySelector('.header').offsetHeight;
 
 /** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext('2d');
@@ -736,8 +736,9 @@ function toPixelHeight(val){
  * On window resize, dynamically adjust canvas width and height. Also dynamically compute new width and gap, clear the canvas, then update array view.
  */
 window.addEventListener('resize', function(){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - document.querySelector('nav').offsetHeight;
+    var root = document.querySelector('html');
+    canvas.width = root.clientWidth;
+    canvas.height = root.clientHeight - document.querySelector('.header').offsetHeight;
     var width = calcWidth(ARRAY_LEN).width;
     var gap = calcWidth(ARRAY_LEN).gap;
     vis.arrayView.width = width;
