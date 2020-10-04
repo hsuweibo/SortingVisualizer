@@ -1,1 +1,2 @@
-The sorting visualizer is a simple application that animates common sorting algorithm on randomly generated arrays. The visualizer was implemented using Vanilla Javascript. Click [here](https://hsuweibo.github.io/SortingVisualizer/) for a demo.
+### About This Project
+The sorting visualizer is a simple application that animates common sorting algorithm on randomly generated arrays. The visualizer was implemented with Vanilla Javascript, using only pre-ES6 syntax. Click [here](https://hsuweibo.github.io/SortingVisualizer/) for a demo.
